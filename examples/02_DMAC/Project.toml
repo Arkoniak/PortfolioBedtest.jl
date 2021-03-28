@@ -1,0 +1,5 @@
+[deps]
+AlphaVantage = "6348297c-a006-11e8-3a05-9bbf8830fd7b"
+ConfigEnv = "01234589-554d-41b7-ae5c-7b6ee2db6796"
+Indicators = "70c4c096-89a6-5ec6-8236-da8aa3bd86fd"
+Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"

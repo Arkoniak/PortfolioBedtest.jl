@@ -1,3 +1,4 @@
+# https://www.quantstart.com/qstrader/tutorial-60-40-portfolio/
 import os
 
 import pandas as pd
@@ -14,7 +15,6 @@ from qstrader.trading.backtest import BacktestTradingSession
 if __name__ == "__main__":
     start_dt = pd.Timestamp('2003-09-30 14:30:00', tz=pytz.UTC)
     end_dt = pd.Timestamp('2019-12-31 23:59:00', tz=pytz.UTC)
-
 
     # Construct the symbols and assets necessary for the backtest
     strategy_symbols = ['SPY', 'AGG']
@@ -70,50 +70,3 @@ if __name__ == "__main__":
         title='60/40 US Equities/Bonds'
     )
     tearsheet.plot_results()
-
-strategy_backtest.get_equity_curve()
-benchmark_backtest.get_equity_curve()
-end_dt = pd.Timestamp('2003-10-02 23:59:59', tz=pytz.UTC)
-    benchmark_backtest = BacktestTradingSession(
-        start_dt,
-        end_dt,
-        benchmark_universe,
-        benchmark_alpha_model,
-        rebalance='buy_and_hold',
-        long_only=True,
-        cash_buffer_percentage=0.01,
-        data_handler=data_handler
-    )
-    benchmark_backtest.run()
-
-df = data_source.asset_bid_ask_frames['EQ:SPY']
-df[(df.index >= start_dt) & (df.index < pd.Timestamp('2003-10-02 23:59:00', tz=pytz.UTC))]
-
-13934 * 70.875448
-1000000 * 0.99/ 71.045145
-14075*71.045145
-
-1000000 - 13934 * 70.875448
-13934*(72.438044 - 70.875448) + 1000000
-
-72.176437/70.875448
-100000/70.875448
-100000 - 1410*70.875448
-1410*(72.176437) + 65.61831999999413
-
-strategy_alpha_model = FixedSignalsAlphaModel({'EQ:SPY': 0.6, 'EQ:AGG': 0.4})
-strategy_alpha_model = FixedSignalsAlphaModel({'EQ:SPY': 1.0})
-strategy_backtest = BacktestTradingSession(
-    start_dt,
-    pd.Timestamp('2003-11-04 23:59:00', tz=pytz.UTC),
-    strategy_universe,
-    strategy_alpha_model,
-    rebalance='end_of_month',
-    long_only=True,
-    cash_buffer_percentage=0.00,
-    data_handler=data_handler
-)
-strategy_backtest.run()
-14150
-8490
-1000000/70.670401

@@ -1,3 +1,4 @@
 [deps]
 AlphaVantage = "6348297c-a006-11e8-3a05-9bbf8830fd7b"
+Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
 TimeSeries = "9e3dc215-6440-5c97-bce1-76c03772f85e"

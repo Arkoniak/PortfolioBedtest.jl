@@ -63,7 +63,7 @@ end
 struct Broker{T1, T2}
     cash::Float64
     shares::T1
-    ratios::T2
+    ratios::T2 # do not like this, should be part of the strategy, not broker
 end
 
 """

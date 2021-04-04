@@ -5,6 +5,7 @@ using CSV
 using HTTP
 
 export TimedEvent, glue, yahoo, momentum_score, mutate, Signal, Broker, current, assets, update, issignal, sim, Recorder, AbstractOrder, order, execute
+export filter_eom_indices
 
 # From https://github.com/JuliaQuant/MarketData.jl/blob/master/src/downloads.jl
 """
@@ -76,6 +77,14 @@ end
 
 Base.isless(v1::TimedEvent{D}, v2::TimedEvent{D}) where D = v1.ts < v2.ts
 
+Base.:(-)(v1::TimedEvent{D}, v2::TimedEvent{D}) where D = TimedEvent(v1.ts, v1.event .- v2.event)
+Base.:(+)(v1::TimedEvent{D}, v2::TimedEvent{D}) where D = TimedEvent(v1.ts, v1.event .+ v2.event)
+Base.:(/)(v1::TimedEvent{D}, v2::TimedEvent{D}) where D = TimedEvent(v1.ts, v1.event ./ v2.event)
+Base.:(/)(v1::TimedEvent, v2::Number) = TimedEvent(v1.ts, v1.event ./ v2)
+Base.:(-)(v1::TimedEvent, v2::Number) = TimedEvent(v1.ts, v1.event .- v2)
+Base.:(*)(v1::TimedEvent, v2::Number) = TimedEvent(v1.ts, v1.event .* v2)
+Base.:(*)(v2::Number, v1::TimedEvent) = TimedEvent(v1.ts, v1.event .* v2)
+
 function glue(f::Function, v1::Vector{TimedEvent{D, T1}}, v2::Vector{TimedEvent{D, T2}}) where {D, T1, T2}
     sort!(v1)
     sort!(v2)
@@ -116,12 +125,22 @@ end
 
 glue(v1::Vector{TimedEvent{D, T1}}, v2::Vector{TimedEvent{D, T2}}) where {D, T1, T2} = glue(mfun, v1, v2)
 glue(v1::Vector, v2::Vector...) = foldl((x, y) -> glue(x, y), v2; init = v1)
+glue(f::Function, v1::Vector, v2::Vector...) = foldl((x, y) -> glue(f, x, y), v2; init = v1)
 
 function filter_eom(v)
     res = similar(v, 0)
     for (i, c) in pairs(v)
         i == length(v) && continue
         month(v[i].ts) != month(v[i+1].ts) && push!(res, c)
+    end
+    return res
+end
+
+function filter_eom_indices(v)
+    res = Int[]
+    for (i, c) in pairs(v)
+        i == length(v) && continue
+        month(v[i].ts) != month(v[i+1].ts) && push!(res, i)
     end
     return res
 end

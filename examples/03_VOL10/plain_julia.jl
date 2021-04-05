@@ -69,11 +69,6 @@ function create_signal(assts, risk = 0.1, period = 36)
     Signal(res)
 end
 
-function indexmap(f, t, i = 1)
-    length(t) == 1 && return (f(first(t), i), )
-    (f(first(t), i), indexmap(f, Base.tail(t), i + 1)...)
-end
-
 ########################################
 # Simulation auxiliary structures
 ########################################
@@ -150,10 +145,10 @@ plot!(tsts, getfield.(mutate.(x -> x[3], signal.signal), :event), label = "GLD")
 
 # Equities
 equity_curve = mutate.(x -> x.total, recorder.data)
-plot(getfield.(equity_curve, :ts), getfield.(equity_curve, :event), legend = :topleft)
+plot(getfield.(equity_curve, :ts), getfield.(equity_curve, :event), legend = :topleft, label = "10% volatilty rebalance")
 
 sfequity_curve = mutate.(x -> x.total, sfrecorder.data)
-plot!(getfield.(sfequity_curve, :ts), getfield.(sfequity_curve, :event))
+plot!(getfield.(sfequity_curve, :ts), getfield.(sfequity_curve, :event), label = "60/40 SPY/AGG")
 
 vol75_equity_curve = mutate.(x -> x.total, vol75_recorder.data)
 plot!(getfield.(vol75_equity_curve, :ts), getfield.(vol75_equity_curve, :event))

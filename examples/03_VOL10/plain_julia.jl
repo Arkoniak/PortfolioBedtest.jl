@@ -3,6 +3,7 @@ using PortfolioBedtest
 import PortfolioBedtest: order, execute
 using Dates
 using Statistics
+using Setfield
 using Convex, SCS # It can be simplifed, but existing solutions are fine
 
 ########################################
@@ -58,12 +59,43 @@ end
 function create_signal(assts, risk = 0.1, period = 36)
     indx = filter_eom_indices(assts)
     w = build(assts, indx[1]:indx[period+1], risk)
-    res = [TimedEvent(assts[indx[period + 1]].ts, w)]
+    w2 = tuple(w...)
+    res = [TimedEvent(assts[indx[period + 1]].ts, w2)]
     for i in period+2:length(indx)
         w = build(assts, indx[i - period]:indx[i], risk)
-        push!(res, TimedEvent(assts[indx[i]].ts, w))
+        w2 = tuple(w...)
+        push!(res, TimedEvent(assts[indx[i]].ts, w2))
     end
     Signal(res)
+end
+
+function indexmap(f, t, i = 1)
+    length(t) == 1 && return (f(first(t), i), )
+    (f(first(t), i), indexmap(f, Base.tail(t), i + 1)...)
+end
+
+########################################
+# Simulation auxiliary structures
+########################################
+struct RatioStrategy end
+
+struct Order{T} <: AbstractOrder
+    shares::T
+end
+
+function order(strat::RatioStrategy, broker, signal, prices)
+    a = assets(broker, prices)
+    ntuple(length(signal)) do i
+        floor(Int, a * signal[i] / prices[i])
+    end |> Order
+end
+
+function execute(broker, ord::Order, prices)
+    a = assets(broker, prices)
+    for i in 1:length(ord.shares)
+        a -= ord.shares[i] * prices[i]
+    end
+    Broker(a, ord.shares)
 end
 
 ########################################
@@ -83,9 +115,100 @@ end
 
 assts = filter(x -> !any(isnan.(x.event)), assts)
 signal = create_signal(assts)
+broker = Broker(1_000_000.0, ntuple(_ -> 0, length(assts[1].event)))
+strat = RatioStrategy()
+recorder = Recorder{Date, typeof((; shares = broker.shares, total = 0.0))}([])
 
+sim(broker, strat, assts, signal, recorder)
+
+########################################
+# Volatility 7.5%
+########################################
+vol75_signal = create_signal(assts, 0.075)
+vol75_recorder = Recorder{Date, typeof((; shares = broker.shares, total = 0.0))}([])
+
+sim(broker, strat, assts, vol75_signal, vol75_recorder)
+
+########################################
+# 60/40 comparison
+########################################
+
+sfsignal = Signal(mutate.(_ -> (0.6, 0.4, 0.0), signal.signal))
+sfrecorder = Recorder{Date, typeof((; shares = broker.shares, total = 0.0))}([])
+
+sim(broker, strat, assts, sfsignal, sfrecorder)
+
+########################################
+# Plotting
+########################################
 using Plots
 tsts = getfield.(signal.signal, :ts)
 plot(tsts, getfield.(mutate.(x -> x[1], signal.signal), :event), legend = :outerright, label = "SPY")
 plot!(tsts, getfield.(mutate.(x -> x[2], signal.signal), :event), label = "AGG")
 plot!(tsts, getfield.(mutate.(x -> x[3], signal.signal), :event), label = "GLD")
+
+
+# Equities
+equity_curve = mutate.(x -> x.total, recorder.data)
+plot(getfield.(equity_curve, :ts), getfield.(equity_curve, :event), legend = :topleft)
+
+sfequity_curve = mutate.(x -> x.total, sfrecorder.data)
+plot!(getfield.(sfequity_curve, :ts), getfield.(sfequity_curve, :event))
+
+vol75_equity_curve = mutate.(x -> x.total, vol75_recorder.data)
+plot!(getfield.(vol75_equity_curve, :ts), getfield.(vol75_equity_curve, :event))
+
+########################################
+# Volatility spectre
+########################################
+function build_vol_plot(assts, rng)
+    isfirst = true
+    broker = Broker(1_000_000.0, ntuple(_ -> 0, length(assts[1].event)))
+    strat = RatioStrategy()
+    recorder = Recorder{Date, typeof((; shares = broker.shares, total = 0.0))}([])
+    local g
+    for vol in rng
+        signal = create_signal(assts, vol)
+        sim(broker, strat, assts, signal, recorder)
+        equity_curve = mutate.(x -> x.total, recorder.data)
+        g = if isfirst
+            isfirst = false
+            plot(getfield.(equity_curve, :ts), getfield.(equity_curve, :event), legend = :topleft, label = "Risk: $vol")
+        else
+            plot!(getfield.(equity_curve, :ts), getfield.(equity_curve, :event), label = "Risk: $vol")
+        end
+    end
+
+    return g
+end
+
+build_vol_plot(assts, 0.06:0.02:0.12)
+
+########################################
+# Sliding window spectre
+########################################
+
+function build_win_plot(assts, rng, risk = 0.1)
+    isfirst = true
+    broker = Broker(1_000_000.0, ntuple(_ -> 0, length(assts[1].event)))
+    strat = RatioStrategy()
+    recorder = Recorder{Date, typeof((; shares = broker.shares, total = 0.0))}([])
+    local g
+    for wnd in rng
+        signal = create_signal(assts, risk, wnd)
+        sim(broker, strat, assts, signal, recorder)
+        equity_curve = mutate.(x -> x.total, recorder.data)
+        g = if isfirst
+            isfirst = false
+            plot(getfield.(equity_curve, :ts), getfield.(equity_curve, :event), legend = :topleft, label = "Window: $wnd", linewidth = 0.5)
+        else
+            plot!(getfield.(equity_curve, :ts), getfield.(equity_curve, :event), label = "Window: $wnd", linewidth = 0.5)
+        end
+    end
+
+    return g
+end
+
+build_win_plot(assts, 12:6:48)
+build_win_plot(assts, 20:2:28)
+build_win_plot(assts, 20:2:28, 0.12)

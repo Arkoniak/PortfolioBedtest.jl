@@ -205,6 +205,10 @@ function record(r::Recorder, broker, prices, ts)
     nothing
 end
 
+function Base.empty!(r::Recorder)
+    empty!(r.data)
+end
+
 abstract type AbstractBroker end
 
 struct Broker{T} <: AbstractBroker
@@ -216,7 +220,11 @@ assets(broker::Broker, prices) = sum(values(broker.shares) .* values(prices)) + 
 
 function execute end
 
-function sim(broker::AbstractBroker, strategy, prices, signal, recorder)
+function sim(broker::AbstractBroker, strategy, prices, signal, recorder; recrestart = true)
+    if recrestart
+        empty!(recorder)
+    end
+
     for i in eachindex(prices)
         ev = prices[i]
         ts = ev.ts

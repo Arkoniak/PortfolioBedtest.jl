@@ -87,10 +87,7 @@ sim(broker, strat, asts, signal, recorder)
 using Plots
 
 equity_curve = mutate.(x -> x.total, recorder.data)
-
-map(x -> x.ts, equity_curve)
 plot(getfield.(equity_curve, :ts), getfield.(equity_curve, :event), legend = :topleft)
-
 
 # Assets buy distribution
 

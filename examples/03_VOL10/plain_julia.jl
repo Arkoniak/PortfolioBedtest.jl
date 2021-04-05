@@ -134,6 +134,14 @@ sfrecorder = Recorder{Date, typeof((; shares = broker.shares, total = 0.0))}([])
 sim(broker, strat, assts, sfsignal, sfrecorder)
 
 ########################################
+# Pure SPY
+########################################
+spysignal = Signal(mutate.(_ -> (1.0, 0.0, 0.0), signal.signal))
+spyrecorder = Recorder{Date, typeof((; shares = broker.shares, total = 0.0))}([])
+
+sim(broker, strat, assts, spysignal, spyrecorder)
+
+########################################
 # Plotting
 ########################################
 using Plots
@@ -145,10 +153,13 @@ plot!(tsts, getfield.(mutate.(x -> x[3], signal.signal), :event), label = "GLD")
 
 # Equities
 equity_curve = mutate.(x -> x.total, recorder.data)
-plot(getfield.(equity_curve, :ts), getfield.(equity_curve, :event), legend = :topleft, label = "10% volatilty rebalance")
+plot(getfield.(equity_curve, :ts), getfield.(equity_curve, :event), legend = :topleft, label = "10% volatilty rebalance", linewidth = 0.5)
 
 sfequity_curve = mutate.(x -> x.total, sfrecorder.data)
-plot!(getfield.(sfequity_curve, :ts), getfield.(sfequity_curve, :event), label = "60/40 SPY/AGG")
+plot!(getfield.(sfequity_curve, :ts), getfield.(sfequity_curve, :event), label = "60/40 SPY/AGG", linewidth = 0.5)
+
+spyequity_curve = mutate.(x -> x.total, spyrecorder.data)
+plot!(getfield.(spyequity_curve, :ts), getfield.(spyequity_curve, :event), label = "100% SPY", linewidth = 0.5)
 
 vol75_equity_curve = mutate.(x -> x.total, vol75_recorder.data)
 plot!(getfield.(vol75_equity_curve, :ts), getfield.(vol75_equity_curve, :event))

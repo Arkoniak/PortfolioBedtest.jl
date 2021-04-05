@@ -11,8 +11,9 @@ HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 SCS = "c946c3f1-0d1f-5ce8-9dea-7daa1f7e2d13"
 
 [compat]
-HTTP = "0.9"
 CSV = "0.8"
+Convex = "0.14"
+HTTP = "0.9"
 julia = "1"
 
 [extras]
